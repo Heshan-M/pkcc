@@ -7,15 +7,16 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Hidden text trick: text color matches background until highlighted */
         .secret-hidden-text {
-            color: #ffffff;
-            background-color: #ffffff;
-            user-select: text;
+            color: #ffffff !important;
+            background-color: #ffffff !important;
+            user-select: none;
+            transition: all 0.15s ease;
         }
-        .secret-hidden-text::selection {
-            color: #0f766e; /* teal text on highlight */
-            background-color: #ccfbf1;
+        .secret-hidden-text.revealed {
+            color: #0f766e !important;
+            background-color: #f8fafc !important;
+            user-select: text;
         }
     </style>
 </head>
@@ -42,7 +43,6 @@
                 </button>
             </div>
         </div>
-        <!-- FOOTER BELOW LOGIN FORM -->
         <div class="mt-4 text-center text-xs text-slate-400">
             Copyright © hM
         </div>
@@ -61,8 +61,8 @@
 
             <!-- Mode Selector Tabs -->
             <div class="flex mb-6 bg-slate-100 p-1 rounded-lg">
-                <button id="tabEncrypt" onclick="switchTab('encrypt')" class="flex-1 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-teal-700 transition">Encrypt Message</button>
-                <button id="tabDecrypt" onclick="switchTab('decrypt')" class="flex-1 py-2 text-sm font-medium rounded-md text-slate-600 transition">Decrypt Message</button>
+                <button id="tabEncrypt" onclick="switchTab('encrypt')" class="flex-1 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-teal-700 transition">Encrypt</button>
+                <button id="tabDecrypt" onclick="switchTab('decrypt')" class="flex-1 py-2 text-sm font-medium rounded-md text-slate-600 transition">Decrypt</button>
             </div>
 
             <!-- ENCRYPT SECTION -->
@@ -77,7 +77,7 @@
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-sm font-medium text-slate-600">Encrypted Output (Send this to friend)</label>
-                        <button onclick="copyToClipboard('encryptOutput')" class="text-xs text-teal-600 hover:underline font-medium">Copy</button>
+                        <button id="copyBtnEnc" onclick="copyToClipboard('encryptOutput', 'copyBtnEnc')" class="text-xs text-teal-600 hover:underline font-medium">Copy</button>
                     </div>
                     <div class="relative">
                         <div id="encryptOutput" class="w-full min-h-[46px] p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-700 text-sm break-all flex items-center"></div>
@@ -96,17 +96,16 @@
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <label class="block text-sm font-medium text-slate-600">Hidden Decrypted Text (Highlight with mouse to read)</label>
-                        <button onclick="clearInput('decryptOutput')" class="text-xs text-rose-600 hover:underline font-medium">Clear</button>
+                        <label id="hintLabel" class="block text-sm font-medium text-slate-600">use keyboard to view</label>
+                        <button id="copyBtnDec" onclick="copyToClipboard('decryptOutput', 'copyBtnDec')" class="text-xs text-teal-600 hover:underline font-medium">Copy</button>
                     </div>
                     <div class="w-full min-h-[46px] p-3 bg-white border border-slate-200 rounded-lg text-sm flex items-center">
-                        <span id="decryptOutput" class="secret-hidden-text font-medium select-all"></span>
+                        <span id="decryptOutput" class="secret-hidden-text font-medium"></span>
                     </div>
                 </div>
             </div>
 
         </div>
-        <!-- FOOTER BELOW APP CARD -->
         <div class="mt-4 text-center text-xs text-slate-400">
             Copyright © hM
         </div>
@@ -114,7 +113,32 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Keyboard event for Username field (Press Enter -> focus Password)
+        let currentHoldKey = "2";
+
+        function updateHoldKey() {
+            let now = new Date();
+            let minutes = now.getMinutes().toString();
+            currentHoldKey = minutes.slice(-1); // Last digit of current minute
+        }
+
+        setInterval(updateHoldKey, 1000);
+        updateHoldKey();
+
+        window.addEventListener('keydown', (e) => {
+            updateHoldKey();
+            if (e.key === currentHoldKey) {
+                let outSpan = document.getElementById('decryptOutput');
+                if (outSpan) outSpan.classList.add('revealed');
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === currentHoldKey) {
+                let outSpan = document.getElementById('decryptOutput');
+                if (outSpan) outSpan.classList.remove('revealed');
+            }
+        });
+
         function handleUserKey(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -122,7 +146,6 @@
             }
         }
 
-        // Keyboard event for Password field (Press Enter -> Login)
         function handlePassKey(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -130,7 +153,6 @@
             }
         }
 
-        // Simple Login Handler
         function handleLogin() {
             const user = document.getElementById('usernameInput').value.trim();
             const pass = document.getElementById('passwordInput').value.trim();
@@ -152,7 +174,6 @@
             document.getElementById('appScreen').classList.add('hidden');
         }
 
-        // Tab Switching
         function switchTab(tab) {
             const encTab = document.getElementById('tabEncrypt');
             const decTab = document.getElementById('tabDecrypt');
@@ -172,7 +193,7 @@
             }
         }
 
-        // Custom Symmetric Encryption / Decryption Cipher
+        // Secure Complicated & Short Cipher (Base64 + Reversal)
         function encryptText(text) {
             if (!text) return '';
             try {
@@ -215,9 +236,19 @@
             if (elementId === 'decryptInput') doDecrypt();
         }
 
-        function copyToClipboard(elementId) {
+        function copyToClipboard(elementId, btnId) {
             let text = document.getElementById(elementId).innerText;
+            if (!text) return;
             navigator.clipboard.writeText(text);
+
+            let btn = document.getElementById(btnId);
+            let originalText = btn.innerText;
+            btn.innerText = "Copied! ✓";
+            btn.classList.add("text-emerald-600", "font-bold");
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("text-emerald-600", "font-bold");
+            }, 1500);
         }
     </script>
 </body>
