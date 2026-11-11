@@ -1,347 +1,223 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="si">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PKCC - Phone Keypad Cipher Converter</title>
+    <title>T2C</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        teal: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            700: '#0f766e',
-                        }
-                    }
-                }
-            }
+    <style>
+        /* Hidden text trick: text color matches background until highlighted */
+        .secret-hidden-text {
+            color: #ffffff;
+            background-color: #ffffff;
+            user-select: text;
         }
-    </script>
+        .secret-hidden-text::selection {
+            color: #0f766e; /* teal text on highlight */
+            background-color: #ccfbf1;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between items-center p-4">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 font-sans">
 
-    <!-- TOP WRAPPER -->
-    <div class="w-full flex-1 flex flex-col justify-center items-center py-6">
-
-        <!-- 1. LOGIN SCREEN -->
-        <div id="loginScreen" class="w-full max-w-sm bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-            <div class="text-center space-y-3">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                </div>
-                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Log In</h2>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="w-full max-w-sm">
+        <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200">
+            <h2 class="text-2xl font-bold text-center mb-6 text-slate-700">Log In</h2>
+            <div id="loginError" class="hidden mb-4 p-3 bg-red-50 text-red-600 text-sm rounded text-center font-medium">
+                Invalid Username or Password
             </div>
-
-            <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
-                    <input type="text" id="loginUsername" required placeholder="Username" autocomplete="off" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Username</label>
+                    <input type="text" id="usernameInput" onkeydown="handleUserKey(event)" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
-                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Password</label>
+                    <input type="password" id="passwordInput" onkeydown="handlePassKey(event)" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
                 </div>
-                
-                <div id="loginError" class="hidden text-rose-600 text-xs font-medium text-center bg-rose-50 p-3 rounded-xl border border-rose-200">
-                    Invalid Username or Password
-                </div>
-
-                <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 active:bg-slate-950 text-white font-semibold text-sm transition duration-150 shadow-sm">
-                    Log In
+                <button onclick="handleLogin()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg transition duration-200">
+                    Login
                 </button>
-            </form>
+            </div>
         </div>
-
-        <!-- 2. MAIN APPLICATION SCREEN (Hidden until authentication) -->
-        <div id="appScreen" class="hidden w-full max-w-3xl space-y-6">
-            
-            <!-- Header -->
-            <header class="flex justify-between items-center pb-4 border-b border-slate-200">
-                <div>
-                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>PKCC</span>
-                    </h1>
-                </div>
-                <button onclick="logout()" class="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold transition border border-slate-300">
-                    Log Out
-                </button>
-            </header>
-
-            <!-- Navigation Tabs (Gray & Teal accent styling) -->
-            <div class="flex gap-2 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/60">
-                <button id="tabEnc" onclick="switchTab('encode')" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition bg-white text-teal-700 shadow-sm border border-slate-200/60">
-                    Text to Numbers (Encode)
-                </button>
-                <button id="tabDec" onclick="switchTab('decode')" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition text-slate-600 hover:text-slate-900">
-                    Numbers to Text (Decode)
-                </button>
-            </div>
-
-            <!-- TAB 1: ENCODER (Text -> Numbers) -->
-            <div id="encoderSection" class="space-y-6">
-                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Input Text</label>
-                        <span class="text-xs text-slate-400">e.g. mama yanawa</span>
-                    </div>
-                    <textarea id="textInput" rows="4" placeholder="Type text here..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none font-sans text-lg text-slate-800 resize-none transition" oninput="encodeText()"></textarea>
-                    
-                    <div class="flex items-center gap-2 pt-1">
-                        <span class="text-xs text-slate-400 font-medium">Examples:</span>
-                        <button onclick="setPresetText('mama yanawa')" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">mama yanawa</button>
-                        <button onclick="setPresetText('hello grahambell')" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">hello grahambell</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-teal-700 uppercase tracking-wider">Encoded Number Pattern</label>
-                        <button onclick="copyToClipboard('encodedOutput')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 transition">
-                            Copy Code
-                        </button>
-                    </div>
-                    <div id="encodedOutput" class="min-h-[80px] p-4 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xl text-slate-800 break-words tracking-widest leading-relaxed">
-                        <span class="text-slate-400 text-base font-sans italic">Output code will appear here...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: DECODER (Numbers -> Text) -->
-            <div id="decoderSection" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Input Number Code</label>
-                        <span class="text-xs text-slate-400">e.g. 6262 926292</span>
-                    </div>
-                    <textarea id="numInput" rows="4" placeholder="Enter number pattern (e.g. 6262 926292)..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none font-mono text-lg text-slate-800 resize-none transition" oninput="decodeNumbers()"></textarea>
-                    
-                    <div class="flex items-center gap-2 pt-1">
-                        <span class="text-xs text-slate-400 font-medium">Examples:</span>
-                        <button onclick="setPresetNum('6262 926292')" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">6262 926292</button>
-                        <button onclick="setPresetNum('443355555666 4447777')" class="text-xs px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">443355555666 4447777</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-teal-700 uppercase tracking-wider">Decoded Text</label>
-                        <button onclick="copyToClipboard('decodedOutput')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 transition">
-                            Copy Text
-                        </button>
-                    </div>
-                    <div id="decodedOutput" class="min-h-[80px] p-4 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xl text-slate-800 break-words leading-relaxed">
-                        <span class="text-slate-400 text-base font-sans italic">Decoded text will appear here...</span>
-                    </div>
-                </div>
-            </div>
-
+        <!-- FOOTER BELOW LOGIN FORM -->
+        <div class="mt-4 text-center text-xs text-slate-400">
+            Copyright © hM
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="w-full py-4 text-center text-xs text-slate-500 font-medium">
-        Copyright © hM
-    </footer>
+    <!-- MAIN APP SCREEN -->
+    <div id="appScreen" class="hidden w-full max-w-2xl">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-md border border-slate-200">
+            
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <h1 class="text-xl font-bold text-slate-700">T2C</h1>
+                <button onclick="handleLogout()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition">
+                    Logout
+                </button>
+            </div>
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 text-white px-4 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 text-xs font-medium pointer-events-none z-50">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span id="toastMsg">Copied!</span>
+            <!-- Mode Selector Tabs -->
+            <div class="flex mb-6 bg-slate-100 p-1 rounded-lg">
+                <button id="tabEncrypt" onclick="switchTab('encrypt')" class="flex-1 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-teal-700 transition">Encrypt Message</button>
+                <button id="tabDecrypt" onclick="switchTab('decrypt')" class="flex-1 py-2 text-sm font-medium rounded-md text-slate-600 transition">Decrypt Message</button>
+            </div>
+
+            <!-- ENCRYPT SECTION -->
+            <div id="sectionEncrypt" class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-slate-600">Type Your Message (Singlish / Text)</label>
+                        <button onclick="clearInput('encryptInput')" class="text-xs text-rose-600 hover:underline font-medium">Clear</button>
+                    </div>
+                    <input type="text" id="encryptInput" oninput="doEncrypt()" placeholder="Type single line here (e.g. mama yanawa)..." class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-slate-600">Encrypted Output (Send this to friend)</label>
+                        <button onclick="copyToClipboard('encryptOutput')" class="text-xs text-teal-600 hover:underline font-medium">Copy</button>
+                    </div>
+                    <div class="relative">
+                        <div id="encryptOutput" class="w-full min-h-[46px] p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-700 text-sm break-all flex items-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DECRYPT SECTION -->
+            <div id="sectionDecrypt" class="space-y-4 hidden">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-slate-600">Paste Encrypted Code Here</label>
+                        <button onclick="clearInput('decryptInput')" class="text-xs text-rose-600 hover:underline font-medium">Clear</button>
+                    </div>
+                    <input type="text" id="decryptInput" oninput="doDecrypt()" placeholder="Paste code here..." class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-slate-600">Hidden Decrypted Text (Highlight with mouse to read)</label>
+                        <button onclick="clearInput('decryptOutput')" class="text-xs text-rose-600 hover:underline font-medium">Clear</button>
+                    </div>
+                    <div class="w-full min-h-[46px] p-3 bg-white border border-slate-200 rounded-lg text-sm flex items-center">
+                        <span id="decryptOutput" class="secret-hidden-text font-medium select-all"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- FOOTER BELOW APP CARD -->
+        <div class="mt-4 text-center text-xs text-slate-400">
+            Copyright © hM
+        </div>
     </div>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. Login Handling ---
-        function handleLogin(e) {
-            e.preventDefault();
-            const usernameInput = document.getElementById('loginUsername').value.trim();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
-            const loginError = document.getElementById('loginError');
+        // Keyboard event for Username field (Press Enter -> focus Password)
+        function handleUserKey(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                document.getElementById('passwordInput').focus();
+            }
+        }
 
-            if (usernameInput.toLowerCase() === 'hello' && passwordInput === 'grahambell') {
+        // Keyboard event for Password field (Press Enter -> Login)
+        function handlePassKey(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleLogin();
+            }
+        }
+
+        // Simple Login Handler
+        function handleLogin() {
+            const user = document.getElementById('usernameInput').value.trim();
+            const pass = document.getElementById('passwordInput').value.trim();
+            const errorBox = document.getElementById('loginError');
+
+            if ((user === 'Hello' || user === 'hello') && pass === 'grahambell') {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('appScreen').classList.remove('hidden');
-                loginError.classList.add('hidden');
+                errorBox.classList.add('hidden');
             } else {
-                loginError.classList.remove('hidden');
+                errorBox.classList.remove('hidden');
             }
         }
 
-        function logout() {
-            document.getElementById('appScreen').classList.add('hidden');
+        function handleLogout() {
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordInput').value = '';
             document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('appScreen').classList.add('hidden');
         }
 
-        // --- 2. Keypad Mapping ---
-        const charToKey = {
-            'a': '2', 'b': '22', 'c': '222',
-            'd': '3', 'e': '33', 'f': '333',
-            'g': '4', 'h': '44', 'i': '444',
-            'j': '5', 'k': '55', 'l': '555',
-            'm': '6', 'n': '66', 'o': '666',
-            'p': '7', 'q': '77', 'r': '777', 's': '7777',
-            't': '8', 'u': '88', 'v': '888',
-            'w': '9', 'x': '99', 'y': '999', 'z': '9999'
-        };
+        // Tab Switching
+        function switchTab(tab) {
+            const encTab = document.getElementById('tabEncrypt');
+            const decTab = document.getElementById('tabDecrypt');
+            const encSec = document.getElementById('sectionEncrypt');
+            const decSec = document.getElementById('sectionDecrypt');
 
-        const keyToChars = {
-            '2': ['a', 'b', 'c'],
-            '3': ['d', 'e', 'f'],
-            '4': ['g', 'h', 'i'],
-            '5': ['j', 'k', 'l'],
-            '6': ['m', 'n', 'o'],
-            '7': ['p', 'q', 'r', 's'],
-            '8': ['t', 'u', 'v'],
-            '9': ['w', 'x', 'y', 'z']
-        };
-
-        // --- 3. Encoder (Text -> Numbers) ---
-        function encodeText() {
-            const rawText = document.getElementById('textInput').value.toLowerCase();
-            const outDiv = document.getElementById('encodedOutput');
-
-            if (!rawText) {
-                outDiv.innerHTML = '<span class="text-slate-400 text-base font-sans italic">Output code will appear here...</span>';
-                return;
-            }
-
-            let result = '';
-            for (let i = 0; i < rawText.length; i++) {
-                const char = rawText[i];
-                if (char === ' ') {
-                    result += ' ';
-                } else if (char === '\n') {
-                    result += '\n';
-                } else if (charToKey[char]) {
-                    result += charToKey[char];
-                } else {
-                    result += char;
-                }
-            }
-
-            outDiv.textContent = result;
-        }
-
-        function setPresetText(text) {
-            document.getElementById('textInput').value = text;
-            encodeText();
-        }
-
-        // --- 4. Decoder (Numbers -> Text) ---
-        function decodeNumbers() {
-            const rawCode = document.getElementById('numInput').value;
-            const outDiv = document.getElementById('decodedOutput');
-
-            if (!rawCode) {
-                outDiv.innerHTML = '<span class="text-slate-400 text-base font-sans italic">Decoded text will appear here...</span>';
-                return;
-            }
-
-            let decodedString = '';
-            const words = rawCode.split(' ');
-
-            words.forEach((word, wIdx) => {
-                if (wIdx > 0) decodedString += ' ';
-
-                let i = 0;
-                while (i < word.length) {
-                    const digit = word[i];
-
-                    if (!keyToChars[digit]) {
-                        decodedString += digit;
-                        i++;
-                        continue;
-                    }
-
-                    // Count continuous matching digits
-                    let count = 0;
-                    while (i < word.length && word[i] === digit) {
-                        count++;
-                        i++;
-                    }
-
-                    const options = keyToChars[digit];
-                    const charIndex = (count - 1) % options.length;
-                    decodedString += options[charIndex];
-                }
-            });
-
-            outDiv.textContent = decodedString.toLowerCase();
-        }
-
-        function setPresetNum(code) {
-            document.getElementById('numInput').value = code;
-            decodeNumbers();
-        }
-
-        // --- 5. UI Tab Switching ---
-        function switchTab(mode) {
-            const encTab = document.getElementById('tabEnc');
-            const decTab = document.getElementById('tabDec');
-            const encSec = document.getElementById('encoderSection');
-            const decSec = document.getElementById('decoderSection');
-
-            if (mode === 'encode') {
+            if (tab === 'encrypt') {
+                encTab.className = "flex-1 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-teal-700 transition";
+                decTab.className = "flex-1 py-2 text-sm font-medium rounded-md text-slate-600 transition";
                 encSec.classList.remove('hidden');
                 decSec.classList.add('hidden');
-                
-                encTab.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition bg-white text-teal-700 shadow-sm border border-slate-200/60";
-                decTab.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition text-slate-600 hover:text-slate-900";
             } else {
+                decTab.className = "flex-1 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-teal-700 transition";
+                encTab.className = "flex-1 py-2 text-sm font-medium rounded-md text-slate-600 transition";
                 decSec.classList.remove('hidden');
                 encSec.classList.add('hidden');
-
-                decTab.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition bg-white text-teal-700 shadow-sm border border-slate-200/60";
-                encTab.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition text-slate-600 hover:text-slate-900";
             }
         }
 
-        // --- 6. Utilities & Clipboard ---
-        function copyToClipboard(elementId) {
-            const target = document.getElementById(elementId);
-            const textToCopy = target.innerText || target.textContent;
-
-            if (!textToCopy || textToCopy.includes('Output code will appear') || textToCopy.includes('Decoded text will appear')) return;
-
-            const textarea = document.createElement('textarea');
-            textarea.value = textToCopy;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-
-            showToast('Copied to clipboard!');
+        // Custom Symmetric Encryption / Decryption Cipher
+        function encryptText(text) {
+            if (!text) return '';
+            try {
+                return btoa(encodeURIComponent(text)).split('').reverse().join('');
+            } catch (e) {
+                return '';
+            }
         }
 
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').textContent = msg;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
+        function decryptText(code) {
+            if (!code) return '';
+            try {
+                let reversed = code.split('').reverse().join('');
+                return decodeURIComponent(atob(reversed));
+            } catch (e) {
+                return 'Invalid Secret Code';
+            }
+        }
 
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 2000);
+        function doEncrypt() {
+            let val = document.getElementById('encryptInput').value;
+            let encrypted = encryptText(val);
+            document.getElementById('encryptOutput').innerText = encrypted;
+        }
+
+        function doDecrypt() {
+            let val = document.getElementById('decryptInput').value.trim();
+            let decrypted = decryptText(val);
+            document.getElementById('decryptOutput').innerText = decrypted;
+        }
+
+        function clearInput(elementId) {
+            let el = document.getElementById(elementId);
+            if (el.tagName === 'INPUT') {
+                el.value = '';
+            } else {
+                el.innerText = '';
+            }
+            if (elementId === 'encryptInput') doEncrypt();
+            if (elementId === 'decryptInput') doDecrypt();
+        }
+
+        function copyToClipboard(elementId) {
+            let text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text);
         }
     </script>
 </body>
